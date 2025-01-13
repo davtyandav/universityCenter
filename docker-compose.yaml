@@ -1,0 +1,15 @@
+  services:
+    postgres:
+      image: postgres:15
+      ports:
+        - "5440:5432"
+      environment:
+        - POSTGRES_USER=david
+        - POSTGRES_PASSWORD=123456
+        - POSTGRES_DB=university
+      healthcheck:
+        test: [ "CMD-SHELL", "sh -c 'pg_isready -U david -d university'" ]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+      restart: unless-stopped

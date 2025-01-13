@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    ports:
+      - "5440:5432"
+    environment:
+      - POSTGRES_USER=david
+      - POSTGRES_PASSWORD=123456
+      - POSTGRES_DB=university
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U david -d university'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    platform: linux/amd64
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    # Убираем healthcheck временно, чтобы он не блокировал запуск Кафки,
+    # если nc (netcat) вдруг отсутствует в образе
+    healthcheck:
+      test: [ "CMD-SHELL", "echo stat | nc localhost 2181 || exit 1" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    platform: linux/amd64
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_ENABLE_KRAFT: "false"
+    healthcheck:
+      test: [ "CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list || exit 1" ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:latest
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -z 127.0.0.1 8081" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    environment:
+      - SCHEMA_REGISTRY_HOST_NAME=schema-registry
+      - SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=kafka:9092
+      - SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL=zookeeper:2182
+
+  app:
+    build: .  # Docker заглянет в текущую папку и найдет там твой Dockerfile
+    container_name: java-university-app
+    ports:
+      - "8080:8080"
+    environment:
+      # Важно: внутри сети Docker подключаемся по именам сервисов!
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/university
+      - SPRING_DATASOURCE_USERNAME=david
+      - SPRING_DATASOURCE_PASSWORD=123456
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+
+#  docker-compose up --build

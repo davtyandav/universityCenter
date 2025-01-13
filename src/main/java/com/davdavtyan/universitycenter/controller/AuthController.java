@@ -1,10 +1,13 @@
 package com.davdavtyan.universitycenter.controller;
 
 import com.davdavtyan.universitycenter.UserRepository;
+import com.davdavtyan.universitycenter.dto.request.LoginRequest;
 import com.davdavtyan.universitycenter.dto.request.UserRegisterRequest;
 import com.davdavtyan.universitycenter.entity.Role;
 import com.davdavtyan.universitycenter.entity.User;
 import com.davdavtyan.universitycenter.service.JwtService;
+import java.util.Map;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -53,11 +56,22 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public String login(@RequestBody User user) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+        // 1. Проверяем логин и пароль
         authManager.authenticate(
-            new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword())
+            new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
         );
-        return jwtService.generateToken(user.getEmail());
+
+        User user = userRepository.findByEmail(loginRequest.getEmail())
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String token = jwtService.generateToken(user.getEmail());
+
+        Map<String, String> stringStringMap = Map.of(
+            "token", token,
+            "role", user.getRole().name()
+        );
+        return ResponseEntity.ok(stringStringMap);
     }
 
 }

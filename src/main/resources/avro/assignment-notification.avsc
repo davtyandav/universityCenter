@@ -1,0 +1,32 @@
+{
+  "namespace": "com.kafka.avro",
+  "type": "record",
+  "name": "AssignmentNotification",
+  "fields": [
+    {
+      "name": "mentor",
+      "type": {
+        "type": "record",
+        "name": "Mentor",
+        "fields": [
+          { "name": "mentorName", "type": "string" },
+          { "name": "mentorEmail", "type": "string" }
+        ]
+      }
+    },
+    {
+      "name": "students",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "Student",
+          "fields": [
+            { "name": "studentName", "type": "string" },
+            { "name": "studentEmail", "type": "string" }
+          ]
+        }
+      }
+    }
+  ]
+}

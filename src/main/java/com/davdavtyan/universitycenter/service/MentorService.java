@@ -19,8 +19,8 @@ public class MentorService {
         return mentorRepository.findAll();
     }
 
-    public Optional<Mentor> getMentorById(Long id) {
-        return mentorRepository.findById(id);
+    public Optional<Mentor> getMentorById(Long userId) {
+        return mentorRepository.findByUserId(userId);
     }
 
     public void deleteStudent(Long id) {

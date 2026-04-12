@@ -40,9 +40,17 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
 
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/auth/**").permitAll()
-                // .requestMatchers("/**").permitAll() // Это лучше убрать, когда заработает логин
-                .anyRequest().authenticated()
+// Разрешаем ТОЛЬКО логин и регистрацию без токена
+                    .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register").permitAll()
+
+                    // Эндпоинт /me ДОЛЖЕН быть защищен, чтобы Spring проверил токен
+                    .requestMatchers("/api/v1/auth/me").authenticated()
+
+                    // Остальные правила
+                    .requestMatchers("/api/v1/users/role/**").permitAll()
+                    .requestMatchers("/api/v1/**").permitAll()
+
+                    .anyRequest().authenticated()
             )
 
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

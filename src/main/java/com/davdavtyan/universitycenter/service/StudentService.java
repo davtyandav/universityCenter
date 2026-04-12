@@ -58,8 +58,8 @@ public class StudentService {
         return lessonStudentsResponse;
     }
 
-    public Optional<Student> getStudentById(Long id) {
-        return studentRepository.findById(id);
+    public Optional<Student> getStudentById(Long userId) {
+        return studentRepository.findByUserId(userId);
     }
 
     public Student createStudent(Student student, Long mentorId) {

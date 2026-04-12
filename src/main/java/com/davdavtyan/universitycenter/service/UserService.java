@@ -27,4 +27,8 @@ public class UserService {
     public List<User> getUsers() {
         return userRepository.findAll();
     }
+    public Optional<User> getFullProfile(String currentUserEmail) {
+        return userRepository.findByEmail(currentUserEmail);
+    }
+
 }

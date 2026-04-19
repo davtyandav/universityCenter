@@ -1,5 +1,6 @@
 package com.davdavtyan.universitycenter.service;
 
+import com.davdavtyan.universitycenter.LessonDescriptorRepository;
 import com.davdavtyan.universitycenter.LessonRepository;
 import com.davdavtyan.universitycenter.MentorRepository;
 import com.davdavtyan.universitycenter.StudentRepository;
@@ -10,6 +11,7 @@ import com.davdavtyan.universitycenter.dto.response.LessonResponse;
 import com.davdavtyan.universitycenter.dto.response.LessonStudentsResponse;
 import com.davdavtyan.universitycenter.dto.response.StudentLessonResponse;
 import com.davdavtyan.universitycenter.entity.Lesson;
+import com.davdavtyan.universitycenter.entity.LessonDescriptor;
 import com.davdavtyan.universitycenter.entity.Mentor;
 import com.davdavtyan.universitycenter.entity.Student;
 import com.davdavtyan.universitycenter.entity.User;
@@ -25,14 +27,17 @@ public class StudentService {
 
     private final StudentRepository studentRepository;
     private final LessonRepository lessonRepository;
+    private final LessonDescriptorRepository lessonDescriptorRepository;
     private final MentorRepository mentorRepository;
     private final KafkaProducerService kafkaProducerService;
 
     public StudentService(StudentRepository studentRepository, LessonRepository lessonRepository,
+                          LessonDescriptorRepository lessonDescriptorRepository,
                           MentorRepository mentorRepository,
                           KafkaProducerService kafkaProducerService) {
         this.studentRepository = studentRepository;
         this.lessonRepository = lessonRepository;
+        this.lessonDescriptorRepository = lessonDescriptorRepository;
         this.mentorRepository = mentorRepository;
         this.kafkaProducerService = kafkaProducerService;
     }
@@ -69,6 +74,7 @@ public class StudentService {
                 .orElseThrow(() -> new IllegalArgumentException("Mentor not found with id: " + mentorId));
         }
         student.setMentor(mentor);
+        student.setUser(student.getUser());
 
         Student save = studentRepository.save(student);
 
@@ -87,12 +93,13 @@ public class StudentService {
                 if (mentorId != null) {
                     mentor = mentorRepository.findById(mentorId)
                         .orElseThrow(() -> new IllegalArgumentException("Mentor not found with id: " + mentorId));
-                    List<Student> attach = attach(mentor, List.of(student));
+//                    List<Student> attach = attach(mentor, List.of(student));
                 } else {
                     mentor = null;
                 }
                 student.setBirthDate(studentDetails.getBirthDate());
                 student.setMentor(mentor);
+                student.setUser(student.getUser());
                 return studentRepository.save(student);
             })
             .orElseThrow(() -> new IllegalArgumentException("Student not found with id: " + id));
@@ -135,6 +142,19 @@ public class StudentService {
         kafkaProducerService.sendAssignmentNotification(notification);
 
         return studentsWithMentor;
+    }
+
+    public void updateStudentsDescriptor(Long descriptorId, List<Long> studentIds) {
+        LessonDescriptor descriptor = lessonDescriptorRepository.findById(descriptorId)
+            .orElseThrow(() -> new RuntimeException("Descriptor not found"));
+
+        List<Student> students = studentRepository.findAllByIdIn(studentIds);
+
+        students.forEach(student -> {
+            student.setLessonDescriptor(descriptor);
+        });
+
+        studentRepository.saveAll(students);
     }
 
     private com.kafka.avro.Student getStudent(Student student) {

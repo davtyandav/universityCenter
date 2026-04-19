@@ -34,7 +34,7 @@ public class MentorService {
     public Mentor updateMentor(Long id, Mentor studentDetails) {
         return mentorRepository.findById(id)
             .map(mentor -> {
-                mentor.setUser(studentDetails.getUser());
+                mentor.setUser(mentor.getUser());
                 mentor.setBirthDate(studentDetails.getBirthDate());
                 return mentorRepository.save(mentor);
             })

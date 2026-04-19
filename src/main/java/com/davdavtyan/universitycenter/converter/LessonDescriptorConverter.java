@@ -3,8 +3,12 @@ package com.davdavtyan.universitycenter.converter;
 import com.davdavtyan.universitycenter.dto.request.LessonDescriptorRequest;
 import com.davdavtyan.universitycenter.dto.response.LessonDescriptorResponse;
 import com.davdavtyan.universitycenter.dto.response.LessonInfo;
+import com.davdavtyan.universitycenter.dto.response.MentorResponse;
+import com.davdavtyan.universitycenter.dto.response.StudentResponse;
 import com.davdavtyan.universitycenter.entity.LessonDescriptor;
 import com.davdavtyan.universitycenter.entity.MonthType;
+import com.davdavtyan.universitycenter.entity.Student;
+import com.davdavtyan.universitycenter.entity.User;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,6 +33,7 @@ public class LessonDescriptorConverter {
         descriptorResponse.setMentorResponse(MentorConverter.toDto(lessonDescriptor.getMentor()));
         descriptorResponse.setDayType(lessonDescriptor.getDayType());
         descriptorResponse.setLessonInfo(lessonsInfo(lessonDescriptor));
+        descriptorResponse.setStudentResponses(studentResponses(lessonDescriptor));
         return descriptorResponse;
     }
 
@@ -36,7 +41,7 @@ public class LessonDescriptorConverter {
         return lessonDescriptor.getLessons().stream()
             .map(LessonConverter::toDto)
             .collect(Collectors.groupingBy(
-                lesson -> lesson.getData().getMonth().name() // Группируем по имени месяца (JANUARY, etc.)
+                lesson -> lesson.getData().getMonth().name()
             ))
             .entrySet().stream()
             .map(entry -> {
@@ -46,6 +51,29 @@ public class LessonDescriptorConverter {
                 return info;
             })
             .collect(Collectors.toList());
+    }
+
+    private static List<StudentResponse> studentResponses(LessonDescriptor lessonDescriptor) {
+        return lessonDescriptor.getStudents().stream()
+            .map(LessonDescriptorConverter::toDto)
+            .collect(Collectors.toList());
+    }
+
+    public static StudentResponse toDto(Student student) {
+        User user = student.getUser();
+
+        StudentResponse studentResponse = new StudentResponse();
+        studentResponse.setId(student.getId());
+        studentResponse.setUser(UserConverter.toDto(user));
+        studentResponse.setBirthDate(student.getBirthDate());
+        studentResponse.setMentor(getMentorResponse(student));
+        return studentResponse;
+    }
+
+    private static MentorResponse getMentorResponse(Student student) {
+        return student.getMentor() == null
+            ? null
+            : MentorConverter.toDto(student.getMentor());
     }
 
 }

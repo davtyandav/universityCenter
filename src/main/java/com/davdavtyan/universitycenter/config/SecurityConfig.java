@@ -28,29 +28,21 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // 1. Добавляем настройку CORS
             .cors(cors -> cors.configurationSource(request -> {
                 var corsConfiguration = new org.springframework.web.cors.CorsConfiguration();
-                corsConfiguration.setAllowedOrigins(java.util.List.of("http://localhost:3000")); // Твой фронт
+                corsConfiguration.setAllowedOrigins(java.util.List.of("http://localhost:3000"));
                 corsConfiguration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                 corsConfiguration.setAllowedHeaders(java.util.List.of("*"));
                 corsConfiguration.setAllowCredentials(true);
                 return corsConfiguration;
             }))
             .csrf(AbstractHttpConfigurer::disable)
-
             .authorizeHttpRequests(auth -> auth
-// Разрешаем ТОЛЬКО логин и регистрацию без токена
-                    .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register").permitAll()
-
-                    // Эндпоинт /me ДОЛЖЕН быть защищен, чтобы Spring проверил токен
-                    .requestMatchers("/api/v1/auth/me").authenticated()
-
-                    // Остальные правила
-                    .requestMatchers("/api/v1/users/role/**").permitAll()
-                    .requestMatchers("/api/v1/**").permitAll()
-
-                    .anyRequest().authenticated()
+                .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register").permitAll()
+                .requestMatchers("/api/v1/students/**").permitAll() // Добавь это явно
+                .requestMatchers("/api/v1/mentors/**").permitAll()
+                .requestMatchers("/api/v1/**").permitAll()
+                .anyRequest().authenticated()
             )
 
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

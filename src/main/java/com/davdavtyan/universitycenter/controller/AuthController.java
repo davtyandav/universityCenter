@@ -1,8 +1,10 @@
 package com.davdavtyan.universitycenter.controller;
 
 import com.davdavtyan.universitycenter.UserRepository;
+import com.davdavtyan.universitycenter.converter.UserConverter;
 import com.davdavtyan.universitycenter.dto.request.LoginRequest;
 import com.davdavtyan.universitycenter.dto.request.UserRegisterRequest;
+import com.davdavtyan.universitycenter.dto.response.UserResponse;
 import com.davdavtyan.universitycenter.entity.Role;
 import com.davdavtyan.universitycenter.entity.User;
 import com.davdavtyan.universitycenter.service.JwtService;
@@ -64,12 +66,13 @@ public class AuthController {
 
         User user = userRepository.findByEmail(loginRequest.getEmail())
             .orElseThrow(() -> new RuntimeException("User not found"));
-
         String token = jwtService.generateToken(user.getEmail());
 
         Map<String, String> stringStringMap = Map.of(
             "token", token,
-            "role", user.getRole().name()
+            "role", user.getRole().name(),
+            "userName", user.getName(),
+            "userLastName", user.getLastName()
         );
         return ResponseEntity.ok(stringStringMap);
     }

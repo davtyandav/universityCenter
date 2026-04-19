@@ -18,5 +18,6 @@ public class LessonDescriptorResponse {
     private LessonDayType dayType;
     private MentorResponse mentorResponse;
     private List<LessonInfo> lessonInfo;
+    private List<StudentResponse> studentResponses;
 
 }

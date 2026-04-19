@@ -2,6 +2,7 @@ package com.davdavtyan.universitycenter.controller;
 
 import com.davdavtyan.universitycenter.converter.StudentConverter;
 import com.davdavtyan.universitycenter.dto.request.AttachRequest;
+import com.davdavtyan.universitycenter.dto.request.StudentAssignmentDto;
 import com.davdavtyan.universitycenter.dto.request.StudentRequest;
 import com.davdavtyan.universitycenter.dto.response.LessonStudentsResponse;
 import com.davdavtyan.universitycenter.dto.response.StudentResponse;
@@ -98,6 +99,15 @@ public class StudentController {
             .toList();
 
         return ResponseEntity.ok(studentResponseList);
+    }
+
+    // POST http://localhost:8080/api/v1/students/lessonDescriptor/5
+    @PostMapping("/lessonDescriptor/{descriptorId}")
+    public ResponseEntity<?> updateDescriptor(@PathVariable Long descriptorId,
+                                              @RequestBody StudentAssignmentDto dto) {
+
+        studentService.updateStudentsDescriptor(descriptorId, dto.getStudentIds());
+        return ResponseEntity.ok("Students updated successfully");
     }
 
 }

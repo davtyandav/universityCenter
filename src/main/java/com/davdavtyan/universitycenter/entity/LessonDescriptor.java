@@ -41,4 +41,7 @@ public class LessonDescriptor {
     @OneToMany(mappedBy = "lessonDescriptor", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Lesson> lessons = new ArrayList<>();
 
+    @OneToMany(mappedBy = "lessonDescriptor", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Student> students = new ArrayList<>();
+
 }

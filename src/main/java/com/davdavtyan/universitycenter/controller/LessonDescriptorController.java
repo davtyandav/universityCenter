@@ -2,12 +2,14 @@ package com.davdavtyan.universitycenter.controller;
 
 import com.davdavtyan.universitycenter.converter.LessonDescriptorConverter;
 import com.davdavtyan.universitycenter.dto.request.LessonDescriptorRequest;
+import com.davdavtyan.universitycenter.dto.request.StudentAssignmentDto;
 import com.davdavtyan.universitycenter.dto.response.LessonDescriptorResponse;
 import com.davdavtyan.universitycenter.entity.LessonDescriptor;
 import com.davdavtyan.universitycenter.service.LessonDescriptorService;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;

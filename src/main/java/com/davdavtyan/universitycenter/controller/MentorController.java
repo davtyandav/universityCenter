@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -59,6 +60,20 @@ public class MentorController {
             .map(MentorConverter::toDtoMentorInfo)
             .map(ResponseEntity::ok)
             .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<MentorResponse> updateMentor(@PathVariable Long id,
+                                                       @RequestBody MentorRequest mentorRequest) {
+        try {
+
+            Mentor entity = MentorConverter.toEntity(mentorRequest);
+            Mentor updateMentor = mentorService.updateMentor(id, entity);
+            MentorResponse dto = MentorConverter.toDto(updateMentor);
+            return ResponseEntity.ok(dto);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @DeleteMapping("/{id}")

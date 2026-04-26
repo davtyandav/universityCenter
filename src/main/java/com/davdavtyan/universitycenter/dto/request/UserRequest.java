@@ -1,5 +1,6 @@
 package com.davdavtyan.universitycenter.dto.request;
 
+import com.davdavtyan.universitycenter.entity.Status;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -11,4 +12,5 @@ public class UserRequest {
     private String lastName;
     private String username;
     private String email;
+    private Status status;
 }

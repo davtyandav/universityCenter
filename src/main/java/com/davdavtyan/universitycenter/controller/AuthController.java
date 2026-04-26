@@ -6,6 +6,7 @@ import com.davdavtyan.universitycenter.dto.request.LoginRequest;
 import com.davdavtyan.universitycenter.dto.request.UserRegisterRequest;
 import com.davdavtyan.universitycenter.dto.response.UserResponse;
 import com.davdavtyan.universitycenter.entity.Role;
+import com.davdavtyan.universitycenter.entity.Status;
 import com.davdavtyan.universitycenter.entity.User;
 import com.davdavtyan.universitycenter.service.JwtService;
 import java.util.Map;
@@ -48,6 +49,7 @@ public class AuthController {
         newUser.setLastName(request.getLastName());
         newUser.setEmail(request.getEmail());
         newUser.setPassword(encoder.encode(request.getPassword()));
+        newUser.setStatus(Status.DISABLE);
 
         Role userRole = Role.valueOf(request.getRole().toUpperCase());
         newUser.setRole(userRole);

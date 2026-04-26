@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @CrossOrigin(origins = "http://localhost:3000")
@@ -44,6 +45,19 @@ public class StudentController {
         return ResponseEntity.ok(students);
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<List<StudentResponse>> searchStudents(
+        @RequestParam(required = false) Boolean hasMentor,
+        @RequestParam(required = false) Boolean hasDescriptor) {
+
+        List<StudentResponse> students = studentService.getFilteredStudents(hasMentor, hasDescriptor)
+            .stream()
+            .map(StudentConverter::toDto)
+            .toList();
+
+        return ResponseEntity.ok(students);
+    }
+
     @GetMapping("/lessonDescriptor/{descriptorId}/lesson/{lessonId}")
     public ResponseEntity<LessonStudentsResponse> getStudentsByLessonDescriptor(@PathVariable Long descriptorId,
                                                                                 @PathVariable Long lessonId) {
@@ -59,6 +73,15 @@ public class StudentController {
             .map(ResponseEntity::ok)
             .orElse(ResponseEntity.notFound().build());
     }
+
+    @GetMapping("/user/{id}")
+    public ResponseEntity<StudentResponse> getStudentByUserId(@PathVariable Long id) {
+        return studentService.getStudentUserById(id)
+            .map(StudentConverter::toDto)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+    }
+
 
     @PostMapping
     public ResponseEntity<StudentResponse> createStudent(@RequestBody StudentRequest studentRequest) {

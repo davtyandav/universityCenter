@@ -59,10 +59,11 @@ public class LessonController {
 
     @PostMapping("/generate")
     public ResponseEntity<List<LessonResponse>> generate(@RequestBody LessonGenerateRequest lessonGenerateRequest) {
-        LessonDescriptor lessonDescriptor =
-            lessonDescriptorService.getLessonDescriptor(lessonGenerateRequest.getLessonDescriptorId());
+        var lessonDescriptor = lessonDescriptorService.getLessonDescriptor(lessonGenerateRequest.getLessonDescriptorId());
         List<Lesson> lessons = lessonService.generateBy(lessonDescriptor, lessonGenerateRequest.getMonthType());
-        List<LessonResponse> lessonResponses = lessons.stream().map(LessonConverter::toDto).toList();
+        List<LessonResponse> lessonResponses = lessons.stream()
+            .map(LessonConverter::toDto)
+            .toList();
         return ResponseEntity.ok(lessonResponses);
     }
 

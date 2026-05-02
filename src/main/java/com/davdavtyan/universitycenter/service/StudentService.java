@@ -67,6 +67,10 @@ public class StudentService {
         return studentRepository.findByUserId(userId);
     }
 
+    public Optional<Student> getStudentUserById(Long userId) {
+        return studentRepository.findByUserId(userId);
+    }
+
     public Student createStudent(Student student, Long mentorId) {
         Mentor mentor = null;
         if (mentorId != null) {
@@ -83,6 +87,10 @@ public class StudentService {
 //        }
 
         return save;
+    }
+
+    public List<Student> getFilteredStudents(Boolean hasMentor, Boolean hasDescriptor) {
+        return studentRepository.findFilteredWithRelations(hasMentor, hasDescriptor);
     }
 
     public Student updateStudent(Long id, StudentRequest studentDetails) {

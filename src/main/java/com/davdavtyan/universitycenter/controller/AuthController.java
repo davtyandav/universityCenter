@@ -1,13 +1,14 @@
 package com.davdavtyan.universitycenter.controller;
 
 import com.davdavtyan.universitycenter.UserRepository;
-import com.davdavtyan.universitycenter.converter.UserConverter;
 import com.davdavtyan.universitycenter.dto.request.LoginRequest;
 import com.davdavtyan.universitycenter.dto.request.UserRegisterRequest;
-import com.davdavtyan.universitycenter.dto.response.UserResponse;
 import com.davdavtyan.universitycenter.entity.Role;
+import com.davdavtyan.universitycenter.entity.Status;
 import com.davdavtyan.universitycenter.entity.User;
 import com.davdavtyan.universitycenter.service.JwtService;
+import com.davdavtyan.universitycenter.service.ProfileCreator;
+import java.util.List;
 import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -25,13 +26,16 @@ public class AuthController {
     private final AuthenticationManager authManager;
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final List<ProfileCreator> profileCreators;
     private final PasswordEncoder encoder;
 
     public AuthController(AuthenticationManager authManager, JwtService jwtService, UserRepository userRepository,
+                          List<ProfileCreator> profileCreators,
                           PasswordEncoder encoder) {
         this.authManager = authManager;
         this.jwtService = jwtService;
         this.userRepository = userRepository;
+        this.profileCreators = profileCreators;
         this.encoder = encoder;
     }
 
@@ -48,18 +52,22 @@ public class AuthController {
         newUser.setLastName(request.getLastName());
         newUser.setEmail(request.getEmail());
         newUser.setPassword(encoder.encode(request.getPassword()));
+        newUser.setStatus(Status.DISABLE);
 
         Role userRole = Role.valueOf(request.getRole().toUpperCase());
         newUser.setRole(userRole);
 
         userRepository.save(newUser);
+        profileCreators.stream()
+            .filter(creator -> creator.supports(newUser.getRole()))
+            .findFirst()
+            .ifPresent(creator -> creator.createProfile(newUser, request));
         return "User registered successfully with role: " + userRole;
 
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        // 1. Проверяем логин и пароль
         authManager.authenticate(
             new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
         );

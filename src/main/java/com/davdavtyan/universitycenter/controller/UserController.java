@@ -1,6 +1,7 @@
 package com.davdavtyan.universitycenter.controller;
 
 import com.davdavtyan.universitycenter.converter.UserConverter;
+import com.davdavtyan.universitycenter.dto.request.PasswordUpdateRequest;
 import com.davdavtyan.universitycenter.dto.request.UserRequest;
 import com.davdavtyan.universitycenter.dto.response.UserResponse;
 import com.davdavtyan.universitycenter.entity.Role;
@@ -50,7 +51,7 @@ public class UserController {
 
     @PutMapping("/status/{id}")
     public ResponseEntity<UserResponse> updateUserStatus(@PathVariable Long id,
-                                                   @RequestBody UserRequest userRequest) {
+                                                         @RequestBody UserRequest userRequest) {
         try {
             User updateUser = userService.updateUser(id, userRequest.getStatus());
             UserResponse dto = UserConverter.toDto(updateUser);
@@ -69,6 +70,17 @@ public class UserController {
             .orElseThrow(() -> new RuntimeException("Not found user"));
 
         return ResponseEntity.ok(profile);
+    }
+
+    @PutMapping("/{id}/password")
+    public ResponseEntity<?> updateUserPassword(@PathVariable Long id,
+                                                @RequestBody PasswordUpdateRequest passwordRequest) {
+        try {
+            userService.updatePassword(id, passwordRequest.getOldPassword(), passwordRequest.getNewPassword());
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
 }

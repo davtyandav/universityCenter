@@ -1,6 +1,7 @@
 package com.davdavtyan.universitycenter.controller;
 
 import com.davdavtyan.universitycenter.dto.request.CalculateRequest;
+import com.davdavtyan.universitycenter.dto.response.SalaryResponse;
 import com.davdavtyan.universitycenter.service.SalaryService;
 import java.time.LocalDateTime;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,7 +19,7 @@ public class SalaryController {
     }
 
     @PostMapping("/calculate")
-    public Double calculate(@RequestBody CalculateRequest calculate) {
+    public SalaryResponse calculate(@RequestBody CalculateRequest calculate) {
         Long mentorId = calculate.getMentorId();
         LocalDateTime start = calculate.getStart();
         LocalDateTime end = calculate.getEnd();

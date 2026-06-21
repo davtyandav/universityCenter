@@ -1,7 +1,7 @@
 package com.davdavtyan.universitycenter.service;
 
 import com.davdavtyan.universitycenter.LessonDescriptorRepository;
-import com.davdavtyan.universitycenter.entity.Lesson;
+import com.davdavtyan.universitycenter.dto.response.SalaryResponse;
 import com.davdavtyan.universitycenter.entity.LessonDescriptor;
 import com.davdavtyan.universitycenter.entity.LessonType;
 import java.time.LocalDateTime;
@@ -17,46 +17,46 @@ public class SalaryService {
         this.lessonDescriptorRepository = lessonDescriptorRepository;
     }
 
-    public Double calculateSalary(Long mentorId, LocalDateTime start, LocalDateTime end) {
+    public SalaryResponse calculateSalary(Long mentorId, LocalDateTime start, LocalDateTime end) {
         List<LessonDescriptor> lessonDescriptors =
             lessonDescriptorRepository.findLessonDescriptorsByMentor_Id(mentorId);
         return calculate(start, end, lessonDescriptors);
     }
 
-    private Double calculate(LocalDateTime start, LocalDateTime end, List<LessonDescriptor> lessonDescriptors) {
-        List<Lesson> lessonsByGroup = lessonDescriptors.stream()
-            .filter(lessonDescriptor -> lessonDescriptor.getType() == LessonType.GROUP)
-            .flatMap(des -> des.getLessons().stream()).toList();
+    private SalaryResponse calculate(LocalDateTime start, LocalDateTime end, List<LessonDescriptor> lessonDescriptors) {
+        double groupSalary = 0.0;
+        double singleSalary = 0.0;
 
-        List<Lesson> lessonsNoGroup = lessonDescriptors.stream()
-            .filter(lessonDescriptor -> lessonDescriptor.getType() == LessonType.SINGLE)
-            .flatMap(des -> des.getLessons().stream()).toList();
+        for (LessonDescriptor descriptor : lessonDescriptors) {
+            long completedLessonsCount = descriptor.getLessons().stream()
+                .filter(lesson -> lesson.isCompleted() && dateIsBetween(lesson.getData(), start, end))
+                .count();
 
-        Double noGroupSalary = calculateNoGroups(lessonsNoGroup, start, end);
-        Double groupSalary = calculateGroups(lessonsByGroup, start, end);
+            if (completedLessonsCount == 0) {
+                continue;
+            }
 
-        return noGroupSalary + groupSalary;
+            if (descriptor.getType() == LessonType.GROUP) {
+                int studentsCount = descriptor.getStudents() != null ? descriptor.getStudents().size() : 0;
+                double baseGroupSumPerLesson = (double) ((40000 - 40000 * 5 / 100) * 40 / 100) / 12;
+                double currentGroupSalary = completedLessonsCount * baseGroupSumPerLesson * studentsCount;
+                groupSalary += currentGroupSalary;
 
-    }
+            } else if (descriptor.getType() == LessonType.SINGLE) {
+                double singleSumPerLesson = (double) ((60000 - 60000 * 5 / 100) * 50 / 100) / 12;
+                double currentSingleSalary = completedLessonsCount * singleSumPerLesson;
+                singleSalary += currentSingleSalary;
 
-    private Double calculateNoGroups(List<Lesson> lessons, LocalDateTime start, LocalDateTime end) {
-        double SUM_PER_LESSON = (double) ((60000 - 60000 * 5 / 100) * 50 / 100) / 12;
+            }
+        }
 
-        long count = lessons.stream()
-            .filter(lesson -> lesson.isCompleted() && dateIsBetween(lesson.getData(), start, end)).count();
-        return count * SUM_PER_LESSON;
+        double totalSalary = groupSalary + singleSalary;
 
+        return new SalaryResponse(groupSalary, singleSalary, totalSalary);
     }
 
     private boolean dateIsBetween(LocalDateTime data, LocalDateTime start, LocalDateTime end) {
         return (data.isAfter(start) && data.isBefore(end)) || data.equals(start) || data.equals(end);
-    }
-
-    private Double calculateGroups(List<Lesson> lessons, LocalDateTime start, LocalDateTime end) {
-        double SUM_PER_LESSON = (double) ((40000 - 40000 * 5 / 100) * 40 / 100) / 12;
-        long count = lessons.stream()
-            .filter(lesson -> lesson.isCompleted() && dateIsBetween(lesson.getData(), start, end)).count();
-        return count * SUM_PER_LESSON;
     }
 
 }

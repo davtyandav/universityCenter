@@ -7,15 +7,18 @@ import com.davdavtyan.universitycenter.entity.User;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public Optional<User> getUserById(Long id) {
@@ -41,6 +44,20 @@ public class UserService {
 
     public Optional<User> getFullProfile(String currentUserEmail) {
         return userRepository.findByEmail(currentUserEmail);
+    }
+
+    public void updatePassword(Long id, String oldPassword, String newPassword) {
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
+
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new IllegalArgumentException("Неверный текущий пароль");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setUpdatedAt(LocalDateTime.now());
+
+        userRepository.save(user);
     }
 
 }

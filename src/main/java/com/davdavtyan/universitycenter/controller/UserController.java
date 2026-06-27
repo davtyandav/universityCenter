@@ -4,10 +4,14 @@ import com.davdavtyan.universitycenter.converter.UserConverter;
 import com.davdavtyan.universitycenter.dto.request.PasswordUpdateRequest;
 import com.davdavtyan.universitycenter.dto.request.UserRequest;
 import com.davdavtyan.universitycenter.dto.response.UserResponse;
+import com.davdavtyan.universitycenter.dto.response.PaginatedUserResponse; // Import new wrapper
 import com.davdavtyan.universitycenter.entity.Role;
 import com.davdavtyan.universitycenter.entity.User;
 import com.davdavtyan.universitycenter.service.UserService;
 import java.util.List;
+import org.springframework.data.domain.Page; // Import Page utilities
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -16,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam; // Import RequestParam
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -40,13 +45,22 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<List<UserResponse>> getUsers() {
-        List<UserResponse> users = userService.getUsers()
+    public ResponseEntity<PaginatedUserResponse> getUsers(
+        @RequestParam(defaultValue = "1") int page,
+        @RequestParam(defaultValue = "5") int limit,
+        @RequestParam(defaultValue = "") String search) {
+
+        Pageable pageable = PageRequest.of(page - 1, limit);
+
+        Page<User> userPage = userService.getUsersPaginatedAndFiltered(search, pageable);
+
+        List<UserResponse> userResponses = userPage.getContent()
             .stream()
             .map(UserConverter::toDto)
             .toList();
 
-        return ResponseEntity.ok(users);
+        PaginatedUserResponse response = new PaginatedUserResponse(userResponses, userPage.getTotalPages());
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/status/{id}")
@@ -82,5 +96,4 @@ public class UserController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-
 }

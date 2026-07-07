@@ -127,7 +127,7 @@ public class StudentController {
 
     // POST http://localhost:8080/api/v1/students/lessonDescriptor/5
     @PostMapping("/lessonDescriptor/{descriptorId}")
-    public ResponseEntity<?> updateDescriptor(@PathVariable Long descriptorId,
+    public ResponseEntity<?> assignDescriptorToStudents(@PathVariable Long descriptorId,
                                               @RequestBody StudentAssignmentDto dto) {
 
         studentService.updateStudentsDescriptor(descriptorId, dto.getStudentIds());

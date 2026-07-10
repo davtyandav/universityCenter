@@ -22,10 +22,8 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-    # Убираем healthcheck временно, чтобы он не блокировал запуск Кафки,
-    # если nc (netcat) вдруг отсутствует в образе
     healthcheck:
-      test: [ "CMD-SHELL", "echo stat | nc localhost 2181 || exit 1" ]
+      test: ["CMD", "zookeeper-shell", "localhost:2181", "ls", "/"]
       interval: 10s
       timeout: 10s
       retries: 5
@@ -53,33 +51,33 @@ services:
       retries: 10
 
   schema-registry:
-    image: confluentinc/cp-schema-registry:latest
+    image: confluentinc/cp-schema-registry:7.5.0
     depends_on:
       kafka:
         condition: service_healthy
     ports:
       - "8081:8081"
     healthcheck:
-      test: [ "CMD-SHELL", "nc -z 127.0.0.1 8081" ]
-      interval: 5s
+      test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
+      interval: 10s
       timeout: 5s
-      retries: 20
+      retries: 10
     environment:
       - SCHEMA_REGISTRY_HOST_NAME=schema-registry
-      - SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=kafka:9092
-      - SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL=zookeeper:2182
+      - SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=PLAINTEXT://kafka:9092
+      - SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL=zookeeper:2181
 
   app:
-    build: .  # Docker заглянет в текущую папку и найдет там твой Dockerfile
+    build: .
     container_name: java-university-app
     ports:
       - "8080:8080"
     environment:
-      # Важно: внутри сети Docker подключаемся по именам сервисов!
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/university
       - SPRING_DATASOURCE_USERNAME=david
       - SPRING_DATASOURCE_PASSWORD=123456
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_KAFKA_PRODUCER_PROPERTIES_SCHEMA_REGISTRY_URL=http://schema-registry:8081
     depends_on:
       postgres:
         condition: service_healthy
@@ -87,5 +85,3 @@ services:
         condition: service_healthy
       schema-registry:
         condition: service_healthy
-
-#  docker-compose up --build

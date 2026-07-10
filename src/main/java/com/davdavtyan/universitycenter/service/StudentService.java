@@ -10,6 +10,7 @@ import com.davdavtyan.universitycenter.dto.request.StudentRequest;
 import com.davdavtyan.universitycenter.dto.response.LessonResponse;
 import com.davdavtyan.universitycenter.dto.response.LessonStudentsResponse;
 import com.davdavtyan.universitycenter.dto.response.StudentLessonResponse;
+import com.davdavtyan.universitycenter.entity.Attendance;
 import com.davdavtyan.universitycenter.entity.Lesson;
 import com.davdavtyan.universitycenter.entity.LessonDescriptor;
 import com.davdavtyan.universitycenter.entity.Mentor;
@@ -30,16 +31,19 @@ public class StudentService {
     private final LessonDescriptorRepository lessonDescriptorRepository;
     private final MentorRepository mentorRepository;
     private final KafkaProducerService kafkaProducerService;
+    private final AttendanceRepository attendanceRepository;
 
     public StudentService(StudentRepository studentRepository, LessonRepository lessonRepository,
                           LessonDescriptorRepository lessonDescriptorRepository,
                           MentorRepository mentorRepository,
-                          KafkaProducerService kafkaProducerService) {
+                          KafkaProducerService kafkaProducerService,
+                          AttendanceRepository attendanceRepository) {
         this.studentRepository = studentRepository;
         this.lessonRepository = lessonRepository;
         this.lessonDescriptorRepository = lessonDescriptorRepository;
         this.mentorRepository = mentorRepository;
         this.kafkaProducerService = kafkaProducerService;
+        this.attendanceRepository = attendanceRepository;
     }
 
     public List<Student> getAllStudents() {
@@ -50,10 +54,22 @@ public class StudentService {
         Lesson lesson = lessonRepository.findById(lessonId)
             .orElseThrow(() -> new EntityNotFoundException("Lesson not found"));
 
+        List<Attendance> lessonAttendances = attendanceRepository.findByLessonId(lessonId);
+
         List<StudentLessonResponse> students = studentRepository.findByLessonDescriptorId(descriptorId)
             .stream()
             .filter(s -> s.getLessonDescriptor().getId().equals(descriptorId))
-            .map(StudentConverter::toStudentLessonRDto)
+            .map(student -> {
+                StudentLessonResponse dtoStudent = StudentConverter.toStudentLessonRDto(student);
+                boolean isPresent = lessonAttendances.stream()
+                    .filter(a -> a.getStudent().getId().equals(student.getId()))
+                    .map(Attendance::isPresent)
+                    .findFirst()
+                    .orElse(!lesson.isCompleted());
+
+                dtoStudent.setPresent(isPresent); // Записываем статус в DTO
+                return dtoStudent;
+            })
             .toList();
 
         LessonResponse dto = LessonConverter.toDto(lesson);
@@ -67,6 +83,10 @@ public class StudentService {
         return studentRepository.findByUserId(userId);
     }
 
+    public Optional<Student> getStudentUserById(Long userId) {
+        return studentRepository.findByUserId(userId);
+    }
+
     public Student createStudent(Student student, Long mentorId) {
         Mentor mentor = null;
         if (mentorId != null) {
@@ -76,13 +96,11 @@ public class StudentService {
         student.setMentor(mentor);
         student.setUser(student.getUser());
 
-        Student save = studentRepository.save(student);
+        return studentRepository.save(student);
+    }
 
-//        if (mentor != null) {
-//            List<Student> attach = attach(mentor, Collections.singletonList(save));
-//        }
-
-        return save;
+    public List<Student> getFilteredStudents(Boolean hasMentor, Boolean hasDescriptor) {
+        return studentRepository.findFilteredWithRelations(hasMentor, hasDescriptor);
     }
 
     public Student updateStudent(Long id, StudentRequest studentDetails) {
@@ -93,7 +111,6 @@ public class StudentService {
                 if (mentorId != null) {
                     mentor = mentorRepository.findById(mentorId)
                         .orElseThrow(() -> new IllegalArgumentException("Mentor not found with id: " + mentorId));
-//                    List<Student> attach = attach(mentor, List.of(student));
                 } else {
                     mentor = null;
                 }
@@ -152,6 +169,7 @@ public class StudentService {
 
         students.forEach(student -> {
             student.setLessonDescriptor(descriptor);
+            student.setMentor(descriptor.getMentor());
         });
 
         studentRepository.saveAll(students);
@@ -164,5 +182,4 @@ public class StudentService {
             .setStudentName(user.getName())
             .build();
     }
-
 }

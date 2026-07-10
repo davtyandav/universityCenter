@@ -39,12 +39,16 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register").permitAll()
-                .requestMatchers("/api/v1/students/**").permitAll() // Добавь это явно
+                .requestMatchers("/api/v1/salaries").permitAll()
+                .requestMatchers("/api/v1/salaries/**").permitAll()
+                .requestMatchers("/api/v1/salaries/reports/**").permitAll()
+                .requestMatchers("/api/v1/students/**").permitAll()
+                .requestMatchers("/api/v1/submissions/**").permitAll()
                 .requestMatchers("/api/v1/mentors/**").permitAll()
+                .requestMatchers("/api/v1/roles/**").permitAll()
                 .requestMatchers("/api/v1/**").permitAll()
                 .anyRequest().authenticated()
             )
-
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -60,5 +64,4 @@ public class SecurityConfig {
     public AuthenticationManager authManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
-
 }

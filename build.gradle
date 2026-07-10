@@ -10,6 +10,7 @@ plugins {
 group = 'com.davdavtyan'
 version = '0.0.1-SNAPSHOT'
 description = 'UniversityCenter'
+
 java {
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
@@ -23,7 +24,12 @@ repositories {
 }
 
 dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    // PDF Generation
+    implementation 'com.github.librepdf:openpdf:2.0.3'
 
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
@@ -32,12 +38,14 @@ dependencies {
     implementation 'org.springframework.kafka:spring-kafka'
     implementation 'io.confluent:kafka-avro-serializer:7.5.0'
     implementation 'org.apache.avro:avro:1.11.1'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
+
     runtimeOnly 'org.postgresql:postgresql'
+
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 def generateAvro = tasks.register("generateAvro", GenerateAvroJavaTask) {
@@ -57,4 +65,5 @@ avro {
 
 tasks.named('test') {
     useJUnitPlatform()
+    failOnNoDiscoveredTests = false
 }

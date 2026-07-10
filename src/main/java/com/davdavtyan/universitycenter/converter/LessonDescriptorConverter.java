@@ -24,13 +24,18 @@ public class LessonDescriptorConverter {
     }
 
     public static LessonDescriptorResponse toDto(LessonDescriptor lessonDescriptor) {
-
         LessonDescriptorResponse descriptorResponse = new LessonDescriptorResponse();
         descriptorResponse.setId(lessonDescriptor.getId());
         descriptorResponse.setData(lessonDescriptor.getStartDate());
         descriptorResponse.setType(lessonDescriptor.getType());
         descriptorResponse.setTitle(lessonDescriptor.getTitle());
-        descriptorResponse.setMentorResponse(MentorConverter.toDto(lessonDescriptor.getMentor()));
+
+        if (lessonDescriptor.getMentor() != null) {
+            descriptorResponse.setMentorResponse(MentorConverter.toDto(lessonDescriptor.getMentor()));
+        } else {
+            descriptorResponse.setMentorResponse(null);
+        }
+
         descriptorResponse.setDayType(lessonDescriptor.getDayType());
         descriptorResponse.setLessonInfo(lessonsInfo(lessonDescriptor));
         descriptorResponse.setStudentResponses(studentResponses(lessonDescriptor));

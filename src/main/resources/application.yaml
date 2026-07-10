@@ -27,3 +27,8 @@ kafka:
 
 upload:
   path: uploads
+
+app:
+  admin:
+    email: admin@university.com
+    password: admin123

@@ -1,12 +1,19 @@
 package com.davdavtyan.universitycenter.service;
 
+import com.davdavtyan.universitycenter.FileRepository;
 import com.davdavtyan.universitycenter.LessonDescriptorRepository;
 import com.davdavtyan.universitycenter.LessonRepository;
 import com.davdavtyan.universitycenter.StudentRepository;
+import com.davdavtyan.universitycenter.dto.request.AssignmentRequest;
+import com.davdavtyan.universitycenter.dto.request.LessonCompleteRequest;
+import com.davdavtyan.universitycenter.entity.Assignment;
+import com.davdavtyan.universitycenter.entity.Attendance;
 import com.davdavtyan.universitycenter.entity.Lesson;
 import com.davdavtyan.universitycenter.entity.LessonDayType;
 import com.davdavtyan.universitycenter.entity.LessonDescriptor;
 import com.davdavtyan.universitycenter.entity.MonthType;
+import com.davdavtyan.universitycenter.entity.Student;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -27,13 +34,15 @@ public class LessonService {
     private final LessonRepository lessonRepository;
     private final LessonDescriptorRepository lessonDescriptorRepository;
     private final StudentRepository studentRepository;
+    private final FileRepository fileRepository;
 
     @Autowired
     public LessonService(LessonRepository lessonRepository, LessonDescriptorRepository lessonDescriptorRepository,
-                         StudentRepository studentRepository) {
+                         StudentRepository studentRepository, FileRepository fileRepository) {
         this.lessonRepository = lessonRepository;
         this.lessonDescriptorRepository = lessonDescriptorRepository;
         this.studentRepository = studentRepository;
+        this.fileRepository = fileRepository;
     }
 
     public Lesson addLesson(Lesson lesson) {
@@ -59,14 +68,14 @@ public class LessonService {
                 existingLesson.setCompleted(lesson.isCompleted());
                 return lessonRepository.save(existingLesson);
             }).orElseThrow(() -> new RuntimeException("Lesson not found with id: " + id));
-
     }
 
     @Transactional
     public List<Lesson> generateBy(LessonDescriptor lessonDescriptor, MonthType monthType) {
         LessonDayType dayType = lessonDescriptor.getDayType();
+        int currentYear = LocalDate.now().getYear(); // Исправлен жесткий хардкод 2026 года
 
-        List<Lesson> list = getEvenDays(monthType, 2026, dayType)
+        List<Lesson> list = getEvenDays(monthType, currentYear, dayType)
             .stream()
             .map(day -> {
                 Lesson lesson = new Lesson();
@@ -77,7 +86,6 @@ public class LessonService {
             }).toList();
 
         return lessonRepository.saveAll(list);
-
     }
 
     public List<LocalDateTime> getEvenDays(MonthType monthName, int year, LessonDayType dayTyp) {
@@ -116,39 +124,49 @@ public class LessonService {
         return existingLesson
             .map(lesson -> {
                 lesson.setCompleted(true);
-                lessonRepository.save(lesson);
-
-                return lesson;
+                return lessonRepository.save(lesson);
             })
             .orElse(null);
-
     }
-//
-//    @Transactional
-//    public LessonInfoDto groupCompleted(Long lessonId, List<Long> noPresentsIds) {
-//        List<StudentLesson> studentLessons = studentLessonRepository.findByLessonId(lessonId).stream()
-//            .filter(studentLesson -> noPresentsIds.contains(studentLesson.getStudentId()))
-//            .peek(studentLesson -> studentLesson.setPresent(false))
-//            .collect(Collectors.toList());
-//
-//        studentLessonRepository.saveAll(studentLessons);
-//
-//        List<Student> noPresentStudents = studentRepository.findAllById(noPresentsIds);
-//
-//        LessonInfoDto lessonInfoDto = updateLesson(lessonId, noPresentStudents);
-//        return lessonInfoDto;
-//    }
-//
-//    private LessonInfoDto updateLesson(Long lessonId, List<Student> noPresentStudents) {
-//        Lesson existingLesson = getLessonById(lessonId);
-//        existingLesson.setCompleted(true);
-//        Lesson savedLesson = lessonRepository.save(existingLesson);
-//
-//        LessonInfoDto lessonInfoDto = new LessonInfoDto();
-//        lessonInfoDto.setLesson(savedLesson);
-//        lessonInfoDto.setNoPresentStudents(noPresentStudents);
-//        return lessonInfoDto;
-//    }
+
+    @Transactional
+    public Lesson completeLessonWithDetails(Long lessonId, LessonCompleteRequest request) {
+        Lesson lesson = lessonRepository.findById(lessonId)
+            .orElseThrow(() -> new EntityNotFoundException("Lesson not found with id: " + lessonId));
+
+        lesson.setCompleted(true);
+        lesson.setTitle(request.getTitle());
+
+        // 1. Проставление посещаемости студентам из группы (LessonDescriptor)
+        if (lesson.getLessonDescriptor() != null) {
+            List<Student> groupStudents = studentRepository.findByLessonDescriptorId(lesson.getLessonDescriptor().getId());
+            for (Student student : groupStudents) {
+                Attendance attendance = new Attendance();
+                attendance.setLesson(lesson);
+                attendance.setStudent(student);
+                attendance.setPresent(request.getPresentStudentIds().contains(student.getId()));
+                lesson.getAttendances().add(attendance);
+            }
+        }
+
+        // 2. Добавление новых задач к уроку, если они были переданы
+        if (request.getAssignments() != null) {
+            for (AssignmentRequest assignmentReq : request.getAssignments()) {
+                Assignment assignment = new Assignment();
+                assignment.setTitle(assignmentReq.getTitle());
+                assignment.setDescription(assignmentReq.getDescription());
+                assignment.setDeadline(assignmentReq.getDeadline());
+                assignment.setLesson(lesson);
+
+                if (assignmentReq.getFileId() != null) {
+                    fileRepository.findById(assignmentReq.getFileId()).ifPresent(assignment::setFile);
+                }
+                lesson.getAssignments().add(assignment);
+            }
+        }
+
+        return lessonRepository.save(lesson);
+    }
 
     public void attach(Long lessonId, Long lessonDescriptorId) {
         Optional<Lesson> byId = lessonRepository.findById(lessonId);
@@ -164,8 +182,6 @@ public class LessonService {
         }
         lesson.setLessonDescriptor(byId1.get());
         lessonRepository.save(lesson);
-
     }
 
 }
-
